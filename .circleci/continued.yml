@@ -1,0 +1,93 @@
+version: 2.1
+
+executors:
+  basic:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+
+parameters:
+  update-templates:
+    type: boolean
+    default: false
+
+jobs:
+  update-templates:
+    executor: basic
+    steps:
+      - run: echo "TODO templates"
+  echo:
+    parameters:
+      taskname:
+        type: string
+    executor: basic
+    steps:
+      - run: echo "TODO << parameters.taskname >>"
+
+workflows:
+  templates:
+    when: << pipeline.parameters.update-templates >>
+    jobs:
+      - update-templates:
+          filters:
+            branches:
+              only:
+                - main
+
+  delivery:
+    jobs:
+      - echo:
+          taskname: lint
+          name: lint
+      - echo:
+          taskname: build
+          name: build
+          requires:
+            - lint
+      - echo:
+          taskname: package-dev-redis
+          name: package-dev-redis
+          requires:
+            - build
+      - echo:
+          taskname: deploy-dev-redis
+          name: deploy-dev-redis
+          requires:
+            - package-dev-redis
+      - echo:
+          taskname: package-dev-common
+          name: package-dev-common
+          requires:
+            - deploy-dev-redis
+      - echo:
+          requires:
+            - package-dev-common
+          matrix:
+            parameters:
+              taskname:
+                - package-dev-01
+                - package-dev-02
+                - package-dev-03
+                - package-dev-04
+                - package-dev-05
+                - package-dev-06
+                - package-dev-07
+                - package-dev-08
+                - package-dev-09
+                - package-dev-10
+                - package-dev-11
+      - echo:
+          taskname: deploy-dev-common
+          name: deploy-dev-common
+          requires:
+            - echo-package-dev-01
+            - echo-package-dev-02
+            - echo-package-dev-03
+            - echo-package-dev-04
+            - echo-package-dev-05
+            - echo-package-dev-06
+            - echo-package-dev-07
+            - echo-package-dev-08
+            - echo-package-dev-09
+            - echo-package-dev-10
+            - echo-package-dev-11
