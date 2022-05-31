@@ -101,15 +101,19 @@ workflows:
           config-path: .circleci/continued.yml
           mapping: |
             README.md update-templates true
-          requires:
-            - echo-deploy-dev-a
-            - echo-deploy-dev-b
-            - echo-deploy-dev-c
-            - echo-deploy-dev-d
-            - echo-deploy-dev-e
-            - echo-deploy-dev-f
-            - echo-deploy-dev-g
-            - echo-deploy-dev-h
-            - echo-deploy-dev-i
-            - echo-deploy-dev-j
-            - echo-deploy-dev-k
+          # NOTE: removed requirements here;
+          # We dont need to wait for all *-dev-* jobs to complete
+          # before continuing the pipeline.
+
+          # requires:
+          #   - echo-deploy-dev-a
+          #   - echo-deploy-dev-b
+          #   - echo-deploy-dev-c
+          #   - echo-deploy-dev-d
+          #   - echo-deploy-dev-e
+          #   - echo-deploy-dev-f
+          #   - echo-deploy-dev-g
+          #   - echo-deploy-dev-h
+          #   - echo-deploy-dev-i
+          #   - echo-deploy-dev-j
+          #   - echo-deploy-dev-k
