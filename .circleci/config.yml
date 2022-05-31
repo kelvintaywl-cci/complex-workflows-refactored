@@ -5,11 +5,111 @@ setup: true
 orbs:
   path-filtering: circleci/path-filtering@0.1.3
 
+executors:
+  basic:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+
+# Move dev-* jobs over to setup workflow
+jobs:
+  echo:
+    parameters:
+      taskname:
+        type: string
+    executor: basic
+    steps:
+      - run: echo "TODO << parameters.taskname >>"
+
 workflows:
   setup-workflow:
     jobs:
+      - echo:
+          taskname: lint
+          name: lint
+      - echo:
+          taskname: build
+          name: build
+          requires:
+            - lint
+      - echo:
+          taskname: package-dev-redis
+          name: package-dev-redis
+          requires:
+            - build
+      - echo:
+          taskname: deploy-dev-redis
+          name: deploy-dev-redis
+          requires:
+            - package-dev-redis
+      - echo:
+          taskname: package-dev-common
+          name: package-dev-common
+          requires:
+            - deploy-dev-redis
+      - echo:
+          requires:
+            - package-dev-common
+          matrix:
+            parameters:
+              taskname:
+                - package-dev-01
+                - package-dev-02
+                - package-dev-03
+                - package-dev-04
+                - package-dev-05
+                - package-dev-06
+                - package-dev-07
+                - package-dev-08
+                - package-dev-09
+                - package-dev-10
+                - package-dev-11
+      - echo:
+          taskname: deploy-dev-common
+          name: deploy-dev-common
+          requires:
+            - echo-package-dev-01
+            - echo-package-dev-02
+            - echo-package-dev-03
+            - echo-package-dev-04
+            - echo-package-dev-05
+            - echo-package-dev-06
+            - echo-package-dev-07
+            - echo-package-dev-08
+            - echo-package-dev-09
+            - echo-package-dev-10
+            - echo-package-dev-11
+      - echo:
+          requires:
+            - deploy-dev-common
+          matrix:
+            parameters:
+              taskname:
+                - deploy-dev-a
+                - deploy-dev-b
+                - deploy-dev-c
+                - deploy-dev-d
+                - deploy-dev-e
+                - deploy-dev-f
+                - deploy-dev-g
+                - deploy-dev-h
+                - deploy-dev-i
+                - deploy-dev-j
+                - deploy-dev-k
       - path-filtering/filter:
           base-revision: main
           config-path: .circleci/continued.yml
           mapping: |
             README.md update-templates true
+          requires:
+            - echo-deploy-dev-a
+            - echo-deploy-dev-b
+            - echo-deploy-dev-c
+            - echo-deploy-dev-d
+            - echo-deploy-dev-e
+            - echo-deploy-dev-f
+            - echo-deploy-dev-g
+            - echo-deploy-dev-h
+            - echo-deploy-dev-i
+            - echo-deploy-dev-j
+            - echo-deploy-dev-k
