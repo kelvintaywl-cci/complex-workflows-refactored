@@ -1,9 +1,17 @@
 version: 2.1
 
-setup: true
+setup: << pipeline.parameters.run-setup >>
 
 orbs:
   path-filtering: circleci/path-filtering@0.1.3
+
+parameters:
+  run-setup:
+    type: boolean
+    default: true
+  update-templates:
+    type: boolean
+    default: false 
 
 executors:
   basic:
@@ -11,8 +19,11 @@ executors:
       - image: cimg/base:stable
     resource_class: small
 
-# Move dev-* jobs over to setup workflow
 jobs:
+  update-templates:
+    executor: basic
+    steps:
+      - run: echo "TODO templates"
   echo:
     parameters:
       taskname:
@@ -23,6 +34,7 @@ jobs:
 
 workflows:
   setup-workflow:
+    when: << pipeline.parameters.run-setup >>
     jobs:
       - echo:
           taskname: lint
@@ -98,22 +110,167 @@ workflows:
                 - deploy-dev-k
       - path-filtering/filter:
           base-revision: main
-          config-path: .circleci/continued.yml
+          config-path: .circleci/config.yml
           mapping: |
+            .* run-setup false
             README.md update-templates true
-          # NOTE: removed requirements here;
-          # We dont need to wait for all *-dev-* jobs to complete
-          # before continuing the pipeline.
+  templates:
+    when:
+      and:
+        - << pipeline.parameters.update-templates >>
+        - not: << pipeline.parameters.run-setup >>
+    jobs:
+      - update-templates:
+          filters:
+            branches:
+              only:
+                - main
 
-          # requires:
-          #   - echo-deploy-dev-a
-          #   - echo-deploy-dev-b
-          #   - echo-deploy-dev-c
-          #   - echo-deploy-dev-d
-          #   - echo-deploy-dev-e
-          #   - echo-deploy-dev-f
-          #   - echo-deploy-dev-g
-          #   - echo-deploy-dev-h
-          #   - echo-deploy-dev-i
-          #   - echo-deploy-dev-j
-          #   - echo-deploy-dev-k
+  delivery:
+    when:
+      not: << pipeline.parameters.run-setup >>
+    jobs:
+      - hold-approval-for-qa:
+          type: approval
+      - echo:
+          taskname: package-qa-redis
+          name: package-qa-redis
+          requires:
+            - hold-approval-for-qa
+      - echo:
+          taskname: deploy-qa-redis
+          name: deploy-qa-redis
+          requires:
+            - package-qa-redis
+      - echo:
+          taskname: package-qa-common
+          name: package-qa-common
+          requires:
+            - deploy-qa-redis
+      - echo:
+          requires:
+            - package-qa-common
+          matrix:
+            parameters:
+              taskname:
+                - package-qa-01
+                - package-qa-02
+                - package-qa-03
+                - package-qa-04
+                - package-qa-05
+                - package-qa-06
+                - package-qa-07
+                - package-qa-08
+                - package-qa-09
+                - package-qa-10
+                - package-qa-11
+      - echo:
+          taskname: deploy-qa-common
+          name: deploy-qa-common
+          requires:
+            - echo-package-qa-01
+            - echo-package-qa-02
+            - echo-package-qa-03
+            - echo-package-qa-04
+            - echo-package-qa-05
+            - echo-package-qa-06
+            - echo-package-qa-07
+            - echo-package-qa-08
+            - echo-package-qa-09
+            - echo-package-qa-10
+            - echo-package-qa-11
+      - echo:
+          requires:
+            - deploy-qa-common
+          matrix:
+            parameters:
+              taskname:
+                - deploy-qa-a
+                - deploy-qa-b
+                - deploy-qa-c
+                - deploy-qa-d
+                - deploy-qa-e
+                - deploy-qa-f
+                - deploy-qa-g
+                - deploy-qa-h
+                - deploy-qa-i
+                - deploy-qa-j
+                - deploy-qa-k
+      - hold-approval-for-prod:
+          requires:
+            - echo-deploy-qa-a
+            - echo-deploy-qa-b
+            - echo-deploy-qa-c
+            - echo-deploy-qa-d
+            - echo-deploy-qa-e
+            - echo-deploy-qa-f
+            - echo-deploy-qa-g
+            - echo-deploy-qa-h
+            - echo-deploy-qa-i
+            - echo-deploy-qa-j
+            - echo-deploy-qa-k
+          type: approval
+      - echo:
+          taskname: package-prod-redis
+          name: package-prod-redis
+          requires:
+            - hold-approval-for-prod
+      - echo:
+          taskname: deploy-prod-redis
+          name: deploy-prod-redis
+          requires:
+            - package-prod-redis
+      - echo:
+          taskname: package-prod-common
+          name: package-prod-common
+          requires:
+            - deploy-prod-redis
+      - echo:
+          requires:
+            - package-prod-common
+          matrix:
+            parameters:
+              taskname:
+                - package-prod-01
+                - package-prod-02
+                - package-prod-03
+                - package-prod-04
+                - package-prod-05
+                - package-prod-06
+                - package-prod-07
+                - package-prod-08
+                - package-prod-09
+                - package-prod-10
+                - package-prod-11
+      - echo:
+          taskname: deploy-prod-common
+          name: deploy-prod-common
+          requires:
+            - echo-package-prod-01
+            - echo-package-prod-02
+            - echo-package-prod-03
+            - echo-package-prod-04
+            - echo-package-prod-05
+            - echo-package-prod-06
+            - echo-package-prod-07
+            - echo-package-prod-08
+            - echo-package-prod-09
+            - echo-package-prod-10
+            - echo-package-prod-11
+      - echo:
+          requires:
+            - deploy-prod-common
+          matrix:
+            parameters:
+              taskname:
+                - deploy-prod-a
+                - deploy-prod-b
+                - deploy-prod-c
+                - deploy-prod-d
+                - deploy-prod-e
+                - deploy-prod-f
+                - deploy-prod-g
+                - deploy-prod-h
+                - deploy-prod-i
+                - deploy-prod-j
+                - deploy-prod-k
