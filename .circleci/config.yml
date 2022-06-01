@@ -110,9 +110,9 @@ workflows:
                 - deploy-dev-k
       - path-filtering/filter:
           base-revision: main
-          config-path: .circleci/continued.yml
+          config-path: .circleci/config.yml
           mapping: |
-            * run-setup false
+            .* run-setup false
             README.md update-templates true
   templates:
     when:
